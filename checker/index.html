@@ -1,1 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MES — Quote Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Mulish:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #161b26;
+  --surface2: #1e2535;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #f0ede8;
+  --text2: #9ba3b0;
+  --text3: #5a6272;
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.12);
+  --amber-border: rgba(245,158,11,0.3);
+  --green: #22c55e;
+  --green-dim: rgba(34,197,94,0.1);
+  --green-border: rgba(34,197,94,0.3);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.1);
+  --red-border: rgba(239,68,68,0.3);
+  --orange: #f97316;
+  --orange-dim: rgba(249,115,22,0.1);
+  --blue: #3b82f6;
+  --blue-dim: rgba(59,130,246,0.1);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: 'Mulish', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  line-height: 1.6;
+}
+h1, h2, h3, .heading { font-family: 'Syne', sans-serif; }
+.mono { font-family: 'DM Mono', monospace; }
 
+/* ─── Layout ─── */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+.sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+.sidebar-brand {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.brand-label { font-size: 10px; letter-spacing: 0.14em; color: var(--amber); font-weight: 700; margin-bottom: 3px; }
+.brand-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; color: var(--text); line-height: 1.1; }
+.nav { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  cursor: pointer; border: none; background: none; width: 100%;
+  text-align: left; transition: all 0.15s;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber-border); }
+.nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.settings-btn {
+  width: 100%; padding: 8px 12px;
+  background: none; border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); color: var(--text2);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.15s; font-family: 'Mulish', sans-serif;
+}
+.settings-btn:hover { border-color: var(--border2); color: var(--text); background: var(--surface2); }
+.api-status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); margin-top: 6px; }
+.api-dot { width: 6px; height: 6px; border-radius: 50%; }
+.main { flex: 1; overflow-y: auto; padding: 28px 32px; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { margin-bottom: 24px; }
+.page-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+/* ─── Cards ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 14px;
+}
+.card-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--text2); margin-bottom: 14px; text-transform: uppercase; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+.stat {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+.stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; }
+.stat-val { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--text); }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+/* ─── Chips ─── */
+.chip { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 4px; letter-spacing: 0.04em; }
+.chip-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber-border); }
+.chip-green { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border); }
+.chip-red { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-border); }
+.chip-orange { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(249,115,22,0.3); }
+.chip-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
+.chip-gray { background: rgba(255,255,255,0.05); color: var(--text2); border: 1px solid var(--border2); }
+
+/* ─── Bench bars ─── */
+.bench-row { margin-bottom: 24px; }
+.bench-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.bench-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+.bench-range { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+.bench-track { height: 10px; background: var(--surface2); border-radius: 5px; position: relative; overflow: visible; margin-bottom: 4px; }
+.bench-zone { position: absolute; height: 100%; border-radius: 5px; }
+.bench-median { position: absolute; width: 3px; height: 18px; top: -4px; border-radius: 2px; }
+.bench-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text3); }
+.bench-note { font-size: 12px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
+
+/* ─── Forms ─── */
+label { font-size: 12px; font-weight: 600; color: var(--text2); display: block; margin-bottom: 5px; }
+input[type=text], input[type=number], input[type=password], select, textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: 'Mulish', sans-serif;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--amber); }
+input[type=number].big { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; padding: 11px 14px; }
+.form-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 12px; }
+.form-group { flex: 1; }
+.form-group.fixed { flex: none; }
+
+/* ─── Buttons ─── */
+.btn {
+  padding: 9px 20px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700; letter-spacing: 0.03em;
+  cursor: pointer; border: none; transition: all 0.15s;
+  font-family: 'Mulish', sans-serif; white-space: nowrap;
+}
+.btn-primary { background: var(--amber); color: #000; }
+.btn-primary:hover { background: #e08d00; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+.btn-secondary:hover { border-color: var(--border2); background: rgba(255,255,255,0.07); }
+.btn-ghost { background: none; color: var(--text3); border: 1px solid var(--border); font-size: 12px; padding: 6px 12px; }
+.btn-ghost:hover { color: var(--text2); border-color: var(--border2); }
+.btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-border); font-size: 12px; padding: 6px 12px; }
+.btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+/* ─── Quote result ─── */
+.result-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.result-name { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; line-height: 1.2; }
+.result-meta { font-size: 12px; color: var(--text2); margin-top: 5px; }
+.margin-bar-wrap { height: 6px; background: var(--surface2); border-radius: 3px; position: relative; overflow: hidden; margin: 5px 0; }
+.margin-bar-zone { position: absolute; height: 100%; opacity: 0.25; }
+.margin-bar-fill { position: absolute; height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(.4,0,.2,1); left: 0; }
+.result-flag { display: flex; gap: 8px; padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 12px; line-height: 1.5; }
+.flag-risk { background: var(--red-dim); border: 1px solid var(--red-border); color: #fca5a5; }
+.flag-warn { background: var(--amber-dim); border: 1px solid var(--amber-border); color: #fcd34d; }
+.flag-good { background: var(--green-dim); border: 1px solid var(--green-border); color: #86efac; }
+.check-item { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text2); }
+.check-item:last-child { border-bottom: none; }
+.check-dot { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+/* ─── Markup warning ─── */
+.markup-warn {
+  background: rgba(251,146,60,0.07);
+  border: 1px solid rgba(251,146,60,0.3);
+  border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 14px;
+}
+.markup-warn-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--orange); margin-bottom: 6px; }
+.markup-warn-body { font-size: 12px; color: #fdba74; line-height: 1.7; }
+
+/* ─── Won banner ─── */
+.won-banner {
+  background: var(--green-dim); border: 1px solid var(--green-border);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.won-banner-text { font-size: 13px; color: var(--green); font-weight: 600; }
+.won-banner-sub { font-size: 11px; color: rgba(34,197,94,0.7); }
+
+/* ─── Log table ─── */
+.log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.log-table th { text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.log-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+.log-table td:first-child { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--amber); }
+.log-table tr:last-child td { border-bottom: none; }
+.log-table tr:hover td { background: rgba(255,255,255,0.02); }
+.empty-state { text-align: center; padding: 32px; color: var(--text3); font-size: 13px; }
+
+/* ─── Calc result ─── */
+.verdict-box { border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px; }
+.verdict-in { background: var(--green-dim); border: 1px solid var(--green-border); }
+.verdict-high { background: var(--amber-dim); border: 1px solid var(--amber-border); }
+.verdict-low { background: var(--red-dim); border: 1px solid var(--red-border); }
+.verdict-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; margin-bottom: 5px; }
+.verdict-body { font-size: 13px; line-height: 1.6; }
+.sens-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.sens-row:last-child { border-bottom: none; }
+.sens-row.current { font-weight: 700; color: var(--text); }
+.progress-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin: 4px 0; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+
+/* ─── Modal ─── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 100;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 28px 28px 24px;
+  width: 480px; max-width: 95vw;
+}
+.modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+.modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.5; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+/* ─── Spinner ─── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 28px; height: 28px; border: 2px solid var(--border2); border-top-color: var(--amber); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+.loading-state { text-align: center; padding: 40px 20px; }
+.loading-text { font-size: 12px; color: var(--text3); letter-spacing: 0.08em; }
+
+/* ─── Divider ─── */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ─── Responsive ─── */
+@media (max-width: 700px) {
+  .sidebar { width: 56px; min-width: 56px; }
+  .nav-item span { display: none; }
+  .brand-label, .brand-title, .settings-btn span, .api-status { display: none; }
+  .sidebar-brand { padding: 16px 12px; }
+  .main { padding: 16px; }
+  .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-label">⚡ MES Power</div>
+      <div class="brand-title">Quote<br>Intelligence</div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" onclick="goto('benchmarks')">
+        <span class="nav-icon">◎</span><span>Benchmarks</span>
+      </button>
+      <button class="nav-item" onclick="goto('review')">
+        <span class="nav-icon">⊞</span><span>Review quote</span>
+      </button>
+      <button class="nav-item" onclick="goto('tracker')">
+        <span class="nav-icon">◈</span><span>Win / loss log</span>
+      </button>
+      <button class="nav-item" onclick="goto('calculator')">
+        <span class="nav-icon">◇</span><span>Sweet spot calc</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="settings-btn" onclick="openSettings()">
+        <span>⚙</span><span>API settings</span>
+      </button>
+      <div class="api-status">
+        <div class="api-dot" id="api-dot" style="background:var(--text3)"></div>
+        <span id="api-label">Not configured</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- ── BENCHMARKS ── -->
+    <div class="page active" id="page-benchmarks">
+      <div class="page-header">
+        <div class="page-title">Win / loss intelligence</div>
+        <div class="page-sub">Analysis of <strong>334 confirmed wins</strong> and <strong>486 closed/lost quotes</strong> from your Simpro data. Where you win, where you lose, and why — based on your actual numbers, not guesswork.</div>
+      </div>
+
+      <div class="grid4" style="margin-bottom:14px">
+        <div class="stat"><div class="stat-label">Won quotes</div><div class="stat-val" style="color:var(--green)">334</div><div class="stat-sub">Converted to jobs</div></div>
+        <div class="stat"><div class="stat-label">Lost / closed</div><div class="stat-val" style="color:var(--red)">486</div><div class="stat-sub">£71M+ pipeline lost</div></div>
+        <div class="stat"><div class="stat-label">Win rate</div><div class="stat-val" style="color:var(--amber)">~33%</div><div class="stat-sub">Of all decided quotes</div></div>
+        <div class="stat"><div class="stat-label">Lost with no BD</div><div class="stat-val" style="color:var(--red)">83%</div><div class="stat-sub">No forecast % on lost quotes</div></div>
+      </div>
+
+      <div class="card" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.04);margin-bottom:14px">
+        <div class="card-title" style="color:var(--red)">Why you're losing — the 4 failure modes from your own data</div>
+        <div class="grid2">
+          <div>
+            <div style="margin-bottom:16px"><div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px"><span class="mono" style="font-size:26px;font-weight:500;color:var(--red)">83%</span><span style="font-size:13px;font-weight:700;color:var(--text)">No relationship tracking</span></div><div style="font-size:12px;color:var(--text2);line-height:1.7">83% of lost quotes had no forecast probability set — quotes sent and forgotten. No active pursuit means competitors have time to build the relationship while you wait for an answer that never comes.</div></div>
+            <div><div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px"><span class="mono" style="font-size:26px;font-weight:500;color:var(--amber)">8 days</span><span style="font-size:13px;font-weight:700;color:var(--text)">Reactive, not strategic</span></div><div style="font-size:12px;color:var(--text2);line-height:1.7">Median time from quote issued to due date is just 8 days. Almost entirely reactive RFQ responses. Winning contractors are in the room before the RFQ lands — MES mostly isn't.</div></div>
+          </div>
+          <div>
+            <div style="margin-bottom:16px"><div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px"><span class="mono" style="font-size:26px;font-weight:500;color:var(--amber)">27.7%</span><span style="font-size:13px;font-weight:700;color:var(--text)">Price is NOT the issue on large jobs</span></div><div style="font-size:12px;color:var(--text2);line-height:1.7">Average margin on large lost ICP quotes is 27.7% — right in the sweet spot where you also win (18–32%). You're not losing large jobs on price. You're losing on relationship, description quality, and track record presentation.</div></div>
+            <div><div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px"><span class="mono" style="font-size:26px;font-weight:500;color:var(--red)">£13.8M</span><span style="font-size:13px;font-weight:700;color:var(--text)">Systematic losses to specific customers</span></div><div style="font-size:12px;color:var(--text2);line-height:1.7">One Energiekontor quote lost £13.8M. Source EV: 8 losses, £4.5M, zero wins. Chap Group: 18 lost, £7.6M. These aren't random — they're relationship failures that can be fixed.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Sweet spots — gross margin % where you win by job type</div>
+        <div class="bench-row"><div class="bench-header"><div><div class="bench-name">Labour / maintenance / O&M</div><div style="margin-top:3px"><span class="chip chip-green">Materials &lt;25%</span></div></div><div class="bench-range" style="color:var(--green)">45 – 90%</div></div><div class="bench-track"><div class="bench-zone" style="left:45%;width:45%;background:var(--green)"></div><div class="bench-median" style="left:55%;background:var(--green)"></div></div><div class="bench-labels"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div><div class="bench-note">SAP, HV maintenance, jointing, O&M, surveys. Median win ~57%. <strong>66% of all your wins are in this band.</strong> 33kV Jointing Thurso 85%, Raigmore 76%, Fetteresso 89%. Highest real margins — no civils risk diluting your return.</div></div>
+        <div class="bench-row"><div class="bench-header"><div><div class="bench-name">Mixed scope — connections, EV, substation installs</div><div style="margin-top:3px"><span class="chip chip-amber">Materials 25–60%</span></div></div><div class="bench-range" style="color:var(--amber)">30 – 55%</div></div><div class="bench-track"><div class="bench-zone" style="left:30%;width:25%;background:var(--amber)"></div><div class="bench-median" style="left:42%;background:var(--amber)"></div></div><div class="bench-labels"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div><div class="bench-note">Transformer replacements, EV installs, cable diversions, housing connections. Median win ~42%. Shetland Diversion 62%, BP Dyce 57%, Craighill Housing 56%. Check civils sub markup on materials.</div></div>
+        <div class="bench-row" style="margin-bottom:0"><div class="bench-header"><div><div class="bench-name">Large ICP / civil infrastructure</div><div style="margin-top:3px"><span class="chip chip-red">Materials &gt;60% — all civils subcontract</span></div></div><div class="bench-range" style="color:var(--red)">18 – 32%</div></div><div class="bench-track"><div class="bench-zone" style="left:18%;width:14%;background:var(--red)"></div><div class="bench-median" style="left:25%;background:var(--red)"></div></div><div class="bench-labels"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div><div class="bench-note">Large ICP/IDNO, solar/BESS, EV hubs. Median win ~25%. Portside Quays 29%, Hazelhead 28%, Hillhead Gask 20%, Bedesway 28%, Brackenhills 21%. <strong>You're losing here at the same margins you win — it's not price.</strong></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Customers where you're systematically losing — fix these relationships</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr><th style="text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase">Customer</th><th style="text-align:right;padding:7px 10px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Lost</th><th style="text-align:right;padding:7px 10px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Value</th><th style="text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">What the data says</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);font-weight:600">Energiekontor UK GmbH</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--red)">1</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--red)">£13.8M</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2)">Single catastrophic loss. Who did they award to and why? One conversation could unlock the next opportunity.</td></tr>
+            <tr><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);font-weight:600">Chap Group (Aberdeen)</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">18</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">£7.6M</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2)">You also win with them. Investigate which project types convert vs which don't — the pattern will be in the data.</td></tr>
+            <tr><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--red);font-weight:700">Source EV UK Limited</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--red)">8</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--red)">£4.5M</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--red)">ZERO wins. 8 quotes, £4.5M. Systematic failure — wrong contact, wrong pricing approach, or a competitor has the relationship locked.</td></tr>
+            <tr><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);font-weight:600">Green Nation Solar Energy</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--red)">2</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--red)">£4.2M</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2)">Large solar grid jobs. High civils content. May be losing to more civils-specialist contractors who can undercut on earthworks.</td></tr>
+            <tr><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);font-weight:600">ESP Electricity</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">17</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">£2.1M</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2)">Mixed — you win EV charger work with them. High volume of small losses suggests rate competitiveness on certain work types.</td></tr>
+            <tr><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);font-weight:600">Advance Grid Solutions</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">12</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">£1.7M</td><td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text2)">Mixed — won Drumcross BESS at 60%. Inconsistent. Review which projects convert to understand their decision criteria.</td></tr>
+            <tr><td style="padding:7px 10px;color:var(--amber);font-weight:600">Believ Ltd (incl. Q5953)</td><td style="padding:7px 10px;text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">3</td><td style="padding:7px 10px;text-align:right;font-family:'DM Mono',monospace;color:var(--amber)">£1.4M</td><td style="padding:7px 10px;color:var(--amber)">Q5953 (£414k Liberty Charge Glasgow) is Approved, not closed, no forecast set, due date passed. Follow up TODAY.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="border-color:var(--amber-border)">
+        <div class="card-title">Leverage points — where to focus to win more</div>
+        <div class="grid2">
+          <div><div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em">Immediate (this week)</div><div style="font-size:12px;color:var(--text2);line-height:1.9">› Set forecast % on every open quote — force active pursuit<br>› Call Source EV UK directly — 8 lost, 0 won, £4.5M. Ask why<br>› Chase Q5953 (Believ) — Approved, due date passed, no forecast<br>› Find out who won the Energiekontor £13.8M job and at what margin<br>› Review Chap Group wins vs losses — what pattern determines the outcome</div></div>
+          <div><div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em">Strategic (next quarter)</div><div style="font-size:12px;color:var(--text2);line-height:1.9">› Move from reactive 8-day RFQ response to proactive BD pipeline<br>› For large ICP jobs — invest in better scope descriptions and track record. Price isn't the issue<br>› Double down on labour/O&M — 66% of wins, highest real margins, no civils risk<br>› Log every outcome in the Win/Loss tab to build your own live competitive benchmarks<br>› Review quote description quality on lost large jobs vs won ones</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(249,115,22,0.3);background:rgba(249,115,22,0.04)">
+        <div class="markup-warn-title" style="margin-bottom:8px">⚠ The civils markup trap — gross margin overstates your real return</div>
+        <div class="grid2">
+          <div style="font-size:13px;color:#fdba74;line-height:1.7">On a £400k ICP job at 25% gross margin, if £280k is civils subcontract with the sub's ~15% already baked in, MES is managing £42k of risk on £280k of civils for maybe £10–15k net. The headline margin looks fine — the actual return on MES risk and effort is thin.</div>
+          <div><div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:8px">Rules of thumb</div><div style="font-size:12px;color:#fdba74;line-height:1.8">› Materials &gt;65% = civils-heavy, verify sub markup carefully<br>› 18–22% gross on large ICP = competitive range<br>› Below 18% on large jobs = rarely worth the risk<br>› Use the Sweet Spot Calculator tab to stress-test any quote</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REVIEW ── -->
+    <div class="page" id="page-review">
+      <div class="page-header">
+        <div class="page-title">Review a quote</div>
+        <div class="page-sub">Enter a Simpro quote number. Fetches live data — costs, margins, subcontractors, and every civils/prelims line item — then benchmarks unit rates against market rates and flags anything that looks estimated rather than properly quoted.</div>
+      </div>
+
+      <div class="card">
+        <div class="form-row" style="align-items:flex-end">
+          <div class="form-group">
+            <label>Quote number</label>
+            <input type="number" id="qnum" class="big" placeholder="e.g. 5953" onkeydown="if(event.key==='Enter')runReview()">
+          </div>
+          <div class="form-group fixed">
+            <button class="btn btn-primary" id="review-btn" onclick="runReview()">Analyse →</button>
+          </div>
+        </div>
+        <div id="recent-wrap" style="display:none">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:5px">RECENTLY REVIEWED</div>
+          <div id="recent-chips"></div>
+        </div>
+      </div>
+
+      <div id="review-loading" style="display:none" class="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-msg">QUERYING SIMPRO — FETCHING QUOTE, WIN CHECK & SUBCONTRACTORS…</div>
+      </div>
+      <div id="review-error" style="display:none"></div>
+      <div id="review-result" style="display:none"></div>
+    </div>
+
+    <!-- ── TRACKER ── -->
+    <div class="page" id="page-tracker">
+      <div class="page-header">
+        <div class="page-title">Win / loss log</div>
+        <div class="page-sub">Log every outcome to build your own benchmarks over time. Stored in your browser — export to CSV to share with the team.</div>
+      </div>
+
+      <div class="grid2" style="margin-bottom:14px">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title">Log an outcome</div>
+          <div class="form-row"><div class="form-group fixed" style="width:130px"><label>Quote #</label><input type="number" id="log-id" placeholder="5953"></div><div class="form-group"><label>Quote name</label><input type="text" id="log-name" placeholder="Liberty Charge Glasgow"></div></div>
+          <div class="form-row"><div class="form-group"><label>Contract value (£)</label><input type="number" id="log-val" placeholder="413714"></div><div class="form-group fixed" style="width:120px"><label>Gross margin %</label><input type="number" id="log-margin" placeholder="22.7" step="0.1"></div></div>
+          <div class="form-row"><div class="form-group fixed" style="width:120px"><label>Materials %</label><input type="number" id="log-matpct" placeholder="69" step="0.1"></div><div class="form-group"><label>Outcome</label><select id="log-outcome"><option value="">Select…</option><option value="won">Won</option><option value="lost">Lost</option><option value="pending">Pending</option><option value="no-bid">No bid</option></select></div></div>
+          <div class="form-group" style="margin-bottom:12px"><label>Notes (optional)</label><input type="text" id="log-notes" placeholder="e.g. Lost on price — competitor came in ~5% lower"></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-primary" onclick="logOutcome()">Save outcome</button>
+            <span id="log-saved" style="display:none;font-size:12px;color:var(--green)">Saved ✓</span>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title">Your stats</div>
+          <div id="tracker-empty" class="empty-state" style="padding:20px">No outcomes logged yet.</div>
+          <div id="tracker-stats" style="display:none">
+            <div class="grid2" style="margin-bottom:12px">
+              <div class="stat"><div class="stat-label">Win rate</div><div class="stat-val" id="st-wr" style="color:var(--green)">—</div><div class="stat-sub" id="st-wrsub"></div></div>
+              <div class="stat"><div class="stat-label">Avg won margin</div><div class="stat-val mono" id="st-wm">—</div><div class="stat-sub">gross %</div></div>
+            </div>
+            <div class="grid2">
+              <div class="stat"><div class="stat-label">Avg lost margin</div><div class="stat-val mono" id="st-lm" style="color:var(--red)">—</div><div class="stat-sub">were we too high?</div></div>
+              <div class="stat"><div class="stat-label">Total won value</div><div class="stat-val mono" id="st-tv" style="font-size:16px">—</div><div class="stat-sub"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:0">Outcome log</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+            <button class="btn btn-danger" onclick="clearLog()">Clear all</button>
+          </div>
+        </div>
+        <div id="log-empty" class="empty-state">No outcomes logged yet. Add your first one above.</div>
+        <div id="log-table-wrap" style="display:none;overflow-x:auto">
+          <table class="log-table">
+            <thead><tr><th>#</th><th>Name</th><th>Value</th><th>Margin</th><th>Mat %</th><th>Outcome</th><th>Date</th><th>Notes</th></tr></thead>
+            <tbody id="log-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CALCULATOR ── -->
+    <div class="page" id="page-calculator">
+      <div class="page-header">
+        <div class="page-title">Sweet spot calculator</div>
+        <div class="page-sub">Enter contract parameters to see where you sit against the winning benchmark, with the civils markup adjustment applied. All materials treated as subcontracted civils.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Contract parameters</div>
+        <div class="form-row">
+          <div class="form-group"><label>Contract value (£ ex tax)</label><input type="number" id="c-val" placeholder="413714" oninput="calcSweet()"></div>
+          <div class="form-group"><label>Materials / civils cost (£)</label><input type="number" id="c-mat" placeholder="284439" oninput="calcSweet()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Labour cost (£ MES direct)</label><input type="number" id="c-lab" placeholder="35545" oninput="calcSweet()"></div>
+          <div class="form-group fixed" style="width:180px"><label>Gross margin %</label><input type="number" id="c-gm" placeholder="22.7" step="0.1" oninput="calcSweet()"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3)">Quote 5953 (Liberty Charge EV Hub Glasgow) loaded as example. Edit values above.</div>
+      </div>
+
+      <div id="calc-out" style="display:none">
+        <div id="calc-verdict" class="verdict-box"></div>
+        <div class="grid2">
+          <div class="card" id="calc-breakdown" style="margin-bottom:0"></div>
+          <div class="card" id="calc-sensitivity" style="margin-bottom:0"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Settings Modal ── -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-title">API settings</div>
+    <div class="modal-sub">Your Anthropic API key is stored in this browser only — never sent anywhere except the Anthropic API. The Tugger MCP server gives the AI access to your live Simpro data.</div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Anthropic API key</label>
+      <input type="password" id="s-apikey" placeholder="sk-ant-…">
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Tugger MCP server URL</label>
+      <input type="text" id="s-mcpurl" value="https://mcp.tuggerapp.com/mcp">
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Simpro integration ID</label>
+      <input type="number" id="s-intid" value="4782">
+    </div>
+    <div class="form-group" style="margin-bottom:6px">
+      <label>Tugger auth token (if required by your MCP server)</label>
+      <input type="password" id="s-token" placeholder="Bearer token or leave blank">
+    </div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:2px">
+      Your Anthropic API key must have access to claude-sonnet-4-20250514. The Tugger MCP server connects to your Simpro instance using integration ID 4782.
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save &amp; close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────
+const cfg = () => ({
+  apiKey: localStorage.getItem('mes_apikey') || '',
+  mcpUrl: localStorage.getItem('mes_mcpurl') || 'https://mcp.tuggerapp.com/mcp',
+  intId:  localStorage.getItem('mes_intid')  || '4782',
+  token:  localStorage.getItem('mes_token')  || ''
+});
+
+// ─── Navigation ────────────────────────────────────────────
+function goto(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  const pages = ['benchmarks','review','tracker','calculator'];
+  items[pages.indexOf(id)]?.classList.add('active');
+  if (id === 'tracker') renderLog();
+}
+
+// ─── Settings ──────────────────────────────────────────────
+function openSettings() {
+  const c = cfg();
+  document.getElementById('s-apikey').value = c.apiKey;
+  document.getElementById('s-mcpurl').value = c.mcpUrl;
+  document.getElementById('s-intid').value  = c.intId;
+  document.getElementById('s-token').value  = c.token;
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function saveSettings() {
+  localStorage.setItem('mes_apikey', document.getElementById('s-apikey').value.trim());
+  localStorage.setItem('mes_mcpurl', document.getElementById('s-mcpurl').value.trim());
+  localStorage.setItem('mes_intid',  document.getElementById('s-intid').value.trim());
+  localStorage.setItem('mes_token',  document.getElementById('s-token').value.trim());
+  closeSettings();
+  updateApiStatus();
+}
+function updateApiStatus() {
+  const key = cfg().apiKey;
+  const dot = document.getElementById('api-dot');
+  const lbl = document.getElementById('api-label');
+  if (key) { dot.style.background = 'var(--green)'; lbl.textContent = 'API configured'; }
+  else      { dot.style.background = 'var(--text3)'; lbl.textContent = 'Not configured'; }
+}
+document.getElementById('settings-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeSettings(); });
+
+// ─── Helpers ───────────────────────────────────────────────
+const fmt = n => n ? '£' + Math.round(n).toLocaleString('en-GB') : '£0';
+const pct = n => n != null ? Number(n).toFixed(1) + '%' : '—';
+const fmtDate = s => { if(!s) return ''; const d = new Date(s); return d.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}); };
+
+function stripHtml(html) {
+  if (!html) return '';
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  return (d.textContent || d.innerText || '').replace(/\s+/g,' ').trim().slice(0, 400);
+}
+
+function tierFromValue(v, matPct) {
+  if (!v || v <= 0) return null;
+  if (matPct > 60) return { label: 'Large ICP/Civil', min: 18, max: 32, color: 'var(--red)', chip: 'chip-red' };
+  if (matPct > 25) return { label: 'Mixed scope', min: 30, max: 55, color: 'var(--amber)', chip: 'chip-amber' };
+  return              { label: 'Labour / maintenance', min: 45, max: 90, color: 'var(--green)', chip: 'chip-green' };
+}
+
+// ─── Recent reviews ────────────────────────────────────────
+function saveRecent(n) {
+  try {
+    let r = JSON.parse(localStorage.getItem('mes_recent') || '[]');
+    r = [+n, ...r.filter(x => x !== +n)].slice(0, 8);
+    localStorage.setItem('mes_recent', JSON.stringify(r));
+    renderRecent();
+  } catch(e){}
+}
+function renderRecent() {
+  try {
+    const r = JSON.parse(localStorage.getItem('mes_recent') || '[]');
+    if (!r.length) return;
+    document.getElementById('recent-wrap').style.display = '';
+    document.getElementById('recent-chips').innerHTML = r.map(n =>
+      `<span class="chip chip-blue" style="margin-right:5px;cursor:pointer;margin-bottom:4px" onclick="document.getElementById('qnum').value=${n};runReview()">#${n}</span>`
+    ).join('');
+  } catch(e){}
+}
+
+// ─── Quote review ──────────────────────────────────────────
+async function runReview() {
+  const c = cfg();
+  if (!c.apiKey) { openSettings(); return; }
+
+  const id = parseInt(document.getElementById('qnum').value);
+  if (!id || isNaN(id)) return;
+
+  document.getElementById('review-result').style.display = 'none';
+  document.getElementById('review-error').style.display = 'none';
+  document.getElementById('review-loading').style.display = 'block';
+  document.getElementById('review-btn').disabled = true;
+  document.getElementById('review-btn').textContent = 'Analysing…';
+
+  saveRecent(id);
+
+  const msgs = ['FETCHING QUOTE FROM SIMPRO…','CHECKING WIN HISTORY…','LOADING SUBCONTRACTOR PACKAGES…','BUILDING ASSESSMENT…'];
+  let mi = 0;
+  const mt = setInterval(() => { document.getElementById('loading-msg').textContent = msgs[mi++ % msgs.length]; }, 2200);
+
+  let raw = '';
+  try {
+    const headers = { 'Content-Type': 'application/json', 'x-api-key': c.apiKey, 'anthropic-version': '2023-06-01' };
+    const mcpServers = [{ type: 'url', url: c.mcpUrl, name: 'tugger' }];
+    if (c.token) mcpServers[0].authorization_token = c.token;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: buildPrompt(id, c.intId) }],
+        mcp_servers: mcpServers
+      })
+    });
+
+    const result = await resp.json();
+    if (result.type === 'error') throw new Error('API error: ' + result.error?.type + ' — ' + result.error?.message);
+    if (!result.content) throw new Error('No content returned. Check API key and permissions.');
+
+    raw = result.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response.\n\n' + raw.slice(0, 600));
+
+    const data = JSON.parse(match[0]);
+    renderResult(data, id);
+  } catch(e) {
+    document.getElementById('review-error').style.display = 'block';
+    document.getElementById('review-error').innerHTML = `
+      <div class="card" style="border-color:var(--red-border);background:var(--red-dim)">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">Error analysing quote #${id}</div>
+        <div style="font-size:12px;color:#fca5a5;white-space:pre-wrap;margin-bottom:10px">${e.message}</div>
+        ${raw ? `<details><summary style="font-size:11px;color:var(--text3);cursor:pointer">Show raw API response</summary><pre style="font-size:10px;color:var(--text3);margin-top:8px;overflow:auto;max-height:160px">${raw.slice(0,2000).replace(/</g,'&lt;')}</pre></details>` : ''}
+      </div>`;
+  } finally {
+    clearInterval(mt);
+    document.getElementById('review-loading').style.display = 'none';
+    document.getElementById('review-btn').disabled = false;
+    document.getElementById('review-btn').textContent = 'Analyse →';
+  }
+}
+
+function buildPrompt(id, intId) {
+  return `You are a quote analyst for MES Power Engineering (electrical infrastructure, ICP/IDNO, HV cable, substation, renewables, civils). Use Tugger Simpro integration ${intId}.
+
+WIN RULE: Quote WON = SimproJobs has ConvertedFromQuoteID = ${id}. LinkedJobID on a quote = variation order, NOT a win.
+CIVILS RULE: Treat all materials as subcontracted civils. Their margin is in your cost base.
+TIERS: Small <£50k materials<25% target 45-90%; Medium £50k-300k target 30-55%; Large ICP/Civil >£300k or materials>60% target 18-32%.
+
+Do 4 queries:
+1. SimproQuotes where id=${id}: Name,Stage,CustomerStage,IsClosed,LinkedJobID,TotalExTax,TotalsMaterialsCostEstimate,TotalsResourcesCostLaborEstimate,TotalsGrossMarginEstimate,TotalsNettMarginEstimate,TotalsResourcesCostLaborHoursEstimate,ForecastPercent,DateIssued,DueDate,Description
+2. SimproJobs where ConvertedFromQuoteID=${id} AND Deleted=false: id,Name
+3. SimproQuoteContractorJobs where OwnerID=${id} AND Deleted=false: id,Description,Total_ExTax
+4. SimproQuoteCostCenterOneOffItems where QuoteID=${id} AND Deleted=false: SectionID,Description,EstimatedCost,Markup,Total_Qty,Total_AmountExTax,SellPrice_ExTax
+
+Return ONLY this JSON (no markdown, no fences, nothing outside the object):
+{"found":true,"quote":{"id":${id},"name":"","stage":"","isClosed":false,"isVariation":false,"totalExTax":0,"materialsCost":0,"labourCost":0,"labourHours":0,"grossMarginPct":0,"nettMarginPct":0,"forecastPct":0,"dateIssued":null,"dueDate":null,"description":"plain text strip all HTML max 350 chars"},"won":{"isWon":false,"jobId":0,"jobName":""},"subcontractors":{"totalCost":0,"count":0,"items":[{"description":"","totalCost":0}]},"lineItems":[{"sectionId":0,"description":"","unitCost":0,"markup":0,"qty":0,"totalSell":0,"unitSell":0}],"assessment":{"jobTier":"Large ICP/Civil","tierMin":18,"tierMax":32,"markupRisk":false,"markupNote":"","riskFlags":[],"positiveFlags":[],"recommendation":"","costsComplete":true,"drawingsReceived":null,"subPricesIn":null}}
+
+lineItems: return ALL rows from query 4. unitCost = EstimatedCost, unitSell = SellPrice_ExTax, totalSell = Total_AmountExTax, qty = Total_Qty.
+isVariation = LinkedJobID > 0. markupRisk = subcontractors.totalCost/totalExTax > 0.12. markupNote = plain English markup-on-markup explanation. riskFlags: specific flags (due date, missing costs, low margin, no forecast, zero-cost items). positiveFlags: strengths.`;
+}
+
+// ─── Civils sanity check benchmarks ────────────────────────
+// Derived from market research and MES won/lost quote analysis
+// Each entry: keyword patterns to match description, then costLow/costHigh per unit, unit label, note
+const BENCHMARKS = [
+  { match: ['resurface','resurfacing','tarmac','asphalt','block pav','resin'],
+    costLow: 30, costHigh: 90, unit: '/m²',
+    note: 'Standard tarmac £30–60/m², premium resin/block £80–120/m². Needs subcontractor quote.' },
+  { match: ['excavat','reinstat','pss','lvfp','hv track','hv trench','open cut'],
+    costLow: 200, costHigh: 380, unit: '/m',
+    note: 'Open trench car park/footpath excavate & reinstate: £200–380/m market.' },
+  { match: ['lv track','lv trench','cpu-ev','cpu ev','ev track','ev trench'],
+    costLow: 100, costHigh: 200, unit: '/m',
+    note: 'Shallower LV trench to EV chargers: £100–200/m market.' },
+  { match: ['substation plinth','sub plinth','tx plinth','transformer plinth'],
+    costLow: 7000, costHigh: 12000, unit: 'each',
+    note: 'Concrete plinth for 500kVA–1MVA sub: £7,000–12,000. Must have a subbuy quote.' },
+  { match: ['cpu plinth','charger plinth','evc plinth','ev plinth','ev charger base'],
+    costLow: 400, costHigh: 800, unit: 'each',
+    note: 'Concrete base per EV charger: £400–800 each. £1,000+ is a red flag.' },
+  { match: ['lv feeder pillar plinth','feeder pillar plinth','lvfp plinth','pillar plinth'],
+    costLow: 1200, costHigh: 2500, unit: 'each',
+    note: 'LVFP plinth: £1,200–2,500. Above £3,000 needs a quote.' },
+  { match: ['joint bay','jointing bay','joint chamber'],
+    costLow: 1200, costHigh: 2500, unit: 'each',
+    note: 'Carpark joint bay: £1,200–2,500. Above £3,000 flag for subbuy.' },
+  { match: ['muck away','muck-away','grab lorry','grab hire','skip hire','skip'],
+    costLow: 180, costHigh: 260, unit: '/load',
+    note: 'Grab lorry: £180–260/load market. 25 loads at £290 is above rate.' },
+  { match: ['traffic management','traffic man','tm plan','tm per week'],
+    costLow: 700, costHigh: 1200, unit: '/week',
+    note: 'Basic TM: £700–1,200/week supply. Markup should be 10–15% not 60%+.' },
+  { match: ['groundhog','welfare unit','welfare hire','site welfare'],
+    costLow: 220, costHigh: 380, unit: '/week',
+    note: 'Groundhog welfare unit: £220–380/week hire.' },
+  { match: ['mob','mobilisation','demob','site set up','site setup'],
+    costLow: 1500, costHigh: 3500, unit: 'fixed',
+    note: 'Mobilisation: £1,500–3,500 typical. Above £5,000 needs justification.' },
+  { match: ['road sweep','road clean','jet wash','sweeper'],
+    costLow: 200, costHigh: 450, unit: 'fixed',
+    note: 'Road sweep/jet wash on completion: £200–450 market.' },
+];
+
+function matchBenchmark(desc) {
+  if (!desc) return null;
+  const d = desc.toLowerCase();
+  for (const b of BENCHMARKS) {
+    if (b.match.some(kw => d.includes(kw))) return b;
+  }
+  return null;
+}
+
+function flagItem(item, benchmark) {
+  // Returns 'red', 'amber', 'green', or null
+  const cost = item.unitCost;
+  if (cost === 0 && item.totalSell > 0) return 'amber'; // cost = 0, selling something — no cost basis
+  if (!benchmark || cost === 0) return null;
+  if (cost > benchmark.costHigh * 1.15) return 'red';
+  if (cost > benchmark.costHigh * 0.9)  return 'amber';
+  return 'green';
+}
+
+function renderSanityCheck(lineItems) {
+  if (!lineItems || !lineItems.length) return '';
+
+  // Only check civils-type items — filter to items that match any benchmark
+  const flagged = lineItems.map(item => {
+    const b = matchBenchmark(item.description);
+    const flag = flagItem(item, b);
+    return { ...item, benchmark: b, flag };
+  }).filter(item => item.benchmark || item.unitCost === 0);
+
+  if (!flagged.length) return '';
+
+  const reds   = flagged.filter(i => i.flag === 'red');
+  const ambers = flagged.filter(i => i.flag === 'amber');
+  const greens = flagged.filter(i => i.flag === 'green');
+
+  const totalRedSell   = reds.reduce((a,i)=>a+i.totalSell, 0);
+  const potentialSave  = reds.reduce((a,i)=>{
+    if (!i.benchmark || i.qty === 0) return a;
+    const maxMarket = i.benchmark.costHigh * i.qty * (1 + i.markup/100);
+    return a + Math.max(0, i.totalSell - maxMarket);
+  }, 0);
+
+  const flagColor = { red: 'var(--red)', amber: 'var(--amber)', green: 'var(--green)' };
+  const flagBg    = { red: 'var(--red-dim)', amber: 'var(--amber-dim)', green: 'var(--green-dim)' };
+  const flagBorder= { red: 'var(--red-border)', amber: 'var(--amber-border)', green: 'var(--green-border)' };
+  const flagLabel = { red: '⚠ ABOVE MARKET', amber: '› NEEDS QUOTE', green: '✓ OK' };
+
+  let html = `<div class="card" style="border-color:${reds.length ? 'var(--red-border)' : 'var(--amber-border)'}">
+    <div class="card-title" style="color:${reds.length ? 'var(--red)' : 'var(--amber)'}">Civils & prelims sanity check — ${reds.length} red flags, ${ambers.length} to review</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      Unit costs compared against MES market benchmarks (derived from 334 won quotes + subcontractor market rates).
+      ${reds.length ? `<strong style="color:var(--red)"> Estimated overpricing vs market top: ${fmt(potentialSave)}.</strong> These items need real subcontractor quotes — not estimated rates.` : ''}
+    </div>`;
+
+  // Summary chips
+  html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+    ${reds.length   ? `<span class="chip chip-red">${reds.length} above market — get quotes</span>` : ''}
+    ${ambers.length ? `<span class="chip chip-amber">${ambers.length} borderline — verify</span>` : ''}
+    ${greens.length ? `<span class="chip chip-green">${greens.length} within range</span>` : ''}
+    ${potentialSave > 0 ? `<span class="chip chip-red">Potential sell saving: ${fmt(potentialSave)}</span>` : ''}
+  </div>`;
+
+  // Table
+  html += `<div style="overflow-x:auto"><table class="log-table" style="font-size:12px">
+    <thead><tr>
+      <th style="min-width:180px">Description</th>
+      <th style="text-align:right">Unit cost</th>
+      <th style="text-align:right">Qty</th>
+      <th style="text-align:right">Markup</th>
+      <th style="text-align:right">Sell total</th>
+      <th style="text-align:center">Status</th>
+      <th>Benchmark / note</th>
+    </tr></thead><tbody>`;
+
+  for (const item of flagged) {
+    const fc = flagColor[item.flag] || 'var(--text3)';
+    const fl = flagLabel[item.flag] || '—';
+    const bNote = item.benchmark ? `${fmt(item.benchmark.costLow)}–${fmt(item.benchmark.costHigh)}${item.benchmark.unit}. ${item.benchmark.note}` : item.unitCost === 0 ? 'Cost entered as £0 — no cost basis for this item' : '';
+    const costDisplay = item.unitCost === 0 && item.totalSell > 0
+      ? `<span style="color:var(--amber)">£0 cost</span>`
+      : `<span class="mono" style="color:${fc}">${fmt(item.unitCost)}</span>`;
+
+    html += `<tr style="background:${item.flag === 'red' ? 'rgba(239,68,68,0.04)' : item.flag === 'amber' ? 'rgba(245,158,11,0.04)' : 'transparent'}">
+      <td style="color:var(--text);font-weight:500;max-width:200px">${item.description || '—'}</td>
+      <td style="text-align:right">${costDisplay}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace">${item.qty || '—'}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;${item.markup > 30 ? 'color:var(--amber)' : ''}">${item.markup ? item.markup.toFixed(0)+'%' : '—'}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">${fmt(item.totalSell)}</td>
+      <td style="text-align:center"><span class="chip" style="background:${flagBg[item.flag]||'transparent'};color:${fc};border-color:${flagBorder[item.flag]||fc};font-size:10px;white-space:nowrap">${fl}</span></td>
+      <td style="font-size:11px;color:var(--text3);max-width:220px;line-height:1.4">${bNote}</td>
+    </tr>`;
+  }
+
+  html += `</tbody></table></div>`;
+
+  // Action box if red flags exist
+  if (reds.length) {
+    html += `<div style="margin-top:12px;background:var(--red-dim);border:1px solid var(--red-border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#fca5a5;line-height:1.7">
+      <strong style="color:var(--red)">Action before submitting:</strong> Get at least 2 subcontractor quotes for every red-flagged item. 
+      These are estimated rates, not market prices. Based on MES market benchmarks the sell price on these items could reduce by <strong>${fmt(potentialSave)}</strong> 
+      while still holding a fair margin — which goes directly to competitiveness.
+    </div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function renderResult(d, id) {
+  if (!d.found) {
+    document.getElementById('review-result').style.display = 'block';
+    document.getElementById('review-result').innerHTML = `<div class="card"><div class="empty-state">Quote #${id} not found in Simpro.</div></div>`;
+    return;
+  }
+  const q = d.quote, wo = d.won, sb = d.subcontractors, ax = d.assessment;
+  const matPct = q.totalExTax > 0 && q.materialsCost > 0 ? (q.materialsCost / q.totalExTax) * 100 : 0;
+  const cPct   = q.totalExTax > 0 && sb?.totalCost > 0   ? (sb.totalCost   / q.totalExTax) * 100 : 0;
+  const tMin = ax?.tierMin ?? 18, tMax = ax?.tierMax ?? 32;
+  const gm = q.grossMarginPct || 0;
+  const barColor = gm >= tMin + 5 ? 'var(--green)' : gm >= tMin ? 'var(--amber)' : 'var(--red)';
+  const cap = Math.max(tMax + 20, 60);
+
+  let html = '';
+
+  if (wo?.isWon) {
+    html += `<div class="won-banner"><div style="font-size:18px;color:var(--green)">✓</div><div><div class="won-banner-text">Converted to Job #${wo.jobId}</div><div class="won-banner-sub">${wo.jobName || ''} — created in Simpro</div></div></div>`;
+  }
+
+  // Header
+  const chips = [];
+  if (q.stage) chips.push(`<span class="chip chip-amber">${q.stage.toUpperCase()}</span>`);
+  if (ax?.jobTier) {
+    const t = ax.jobTier.toLowerCase().includes('large') ? 'chip-red' : ax.jobTier.toLowerCase().includes('medium') || ax.jobTier.toLowerCase().includes('mixed') ? 'chip-amber' : 'chip-green';
+    chips.push(`<span class="chip ${t}">${ax.jobTier.toUpperCase()}</span>`);
+  }
+  if (q.isVariation) chips.push(`<span class="chip chip-blue">VARIATION ORDER</span>`);
+
+  html += `<div class="card">
+    <div class="result-header">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">${chips.join('')}</div>
+        <div class="result-name">${q.name || 'Untitled Quote'}</div>
+        <div class="result-meta">
+          ${q.dateIssued ? `Issued ${fmtDate(q.dateIssued)}` : ''}
+          ${q.dueDate    ? ` · Due <span style="color:var(--amber)">${fmtDate(q.dueDate)}</span>` : ''}
+          ${q.forecastPct > 0 ? ` · Forecast <span style="color:var(--green)">${q.forecastPct}%</span>` : ''}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="mono" style="font-size:22px;font-weight:500;color:var(--text)">${fmt(q.totalExTax)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">contract value ex tax</div>
+      </div>
+    </div>
+    ${q.description ? `<div class="divider"></div><div style="font-size:12px;color:var(--text2);line-height:1.6">${q.description}</div>` : ''}
+  </div>`;
+
+  // Metrics
+  const metWarn = (cond) => cond ? 'background:rgba(249,115,22,0.07);border-color:rgba(249,115,22,0.3)' : '';
+  html += `<div class="grid4" style="margin-bottom:14px">
+    <div class="stat"><div class="stat-label">Contract value</div><div class="stat-val mono" style="font-size:18px">${fmt(q.totalExTax)}</div></div>
+    <div class="stat" style="${metWarn(matPct>65)}"><div class="stat-label" style="${matPct>65?'color:var(--orange)':''}">Materials / civils</div><div class="stat-val mono" style="font-size:18px;${matPct>65?'color:var(--orange)':''}">${fmt(q.materialsCost)}</div><div class="stat-sub">${matPct > 0 ? matPct.toFixed(0) + '% of contract' : ''}</div></div>
+    <div class="stat" style="${metWarn(q.totalExTax>0&&q.labourHours===0)}"><div class="stat-label">Labour cost</div><div class="stat-val mono" style="font-size:18px">${fmt(q.labourCost)}</div><div class="stat-sub">${q.labourHours > 0 ? Math.round(q.labourHours) + ' hrs' : 'No hours recorded'}</div></div>
+    <div class="stat" style="${metWarn(cPct>12)}"><div class="stat-label">Subcontractors</div><div class="stat-val mono" style="font-size:18px;${cPct>12?'color:var(--orange)':''}">${sb?.totalCost > 0 ? fmt(sb.totalCost) : '—'}</div><div class="stat-sub">${sb?.count > 0 ? cPct.toFixed(0) + '% · ' + sb.count + ' pkg' + (sb.count!==1?'s':'') : 'None in Simpro'}</div></div>
+  </div>`;
+
+  // Margin
+  html += `<div class="card">
+    <div class="card-title">Margin analysis — ${ax?.jobTier || 'Job'} target: ${tMin}% – ${tMax}%</div>
+    <div class="grid2">
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Gross margin</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span class="mono" style="font-size:24px;font-weight:500;color:${barColor}">${pct(gm)}</span>
+          <span class="chip ${gm>=tMin+5?'chip-green':gm>=tMin?'chip-amber':'chip-red'}">${gm>=tMin+5?'HEALTHY':gm>=tMin?'BORDERLINE':'BELOW TARGET'}</span>
+        </div>
+        <div class="margin-bar-wrap">
+          <div class="margin-bar-zone" style="left:${(tMin/cap)*100}%;width:${((tMax-tMin)/cap)*100}%;background:${barColor}"></div>
+          <div class="margin-bar-fill" style="width:${Math.min((gm/cap)*100,100)}%;background:${barColor}"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Target ${tMin}% – ${tMax}% for this job type</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Nett margin</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span class="mono" style="font-size:24px;font-weight:500;color:var(--text2)">${pct(q.nettMarginPct)}</span>
+          ${q.grossMarginPct > 0 && q.nettMarginPct > 0 ? `<span style="font-size:11px;color:var(--text3)">Overhead: ${pct(q.grossMarginPct-q.nettMarginPct)}</span>` : ''}
+        </div>
+        <div class="margin-bar-wrap">
+          <div class="margin-bar-fill" style="width:${Math.min(((q.nettMarginPct||0)/cap)*100,100)}%;background:var(--text2)"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Nett after overheads</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Markup warning
+  if (ax?.markupRisk) {
+    html += `<div class="markup-warn">
+      <div class="markup-warn-title">⚠ Markup on markup risk</div>
+      <div class="markup-warn-body">${ax.markupNote || `Subcontractor costs (${fmt(sb?.totalCost)}) are ${cPct.toFixed(0)}% of contract value. Their profit margin is already embedded in your cost base — your effective return on MES's own risk and overhead is less than the gross margin % suggests.`}</div>
+      ${sb?.items?.length ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + sb.items.slice(0,5).map(s => `<span class="chip chip-orange">${s.description||'Package'}: ${fmt(s.totalCost)}</span>`).join('') + '</div>' : ''}
+    </div>`;
+  }
+
+  // Checklist + Flags
+  const chk = (lbl, val) => {
+    const ic = val===true?'✓':val===false?'✗':'—';
+    const c  = val===true?'var(--green)':val===false?'var(--red)':'var(--text3)';
+    return `<div class="check-item"><div class="check-dot" style="background:${c}20;color:${c}">${ic}</div>${lbl}</div>`;
+  };
+  html += `<div class="grid2">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Scope checklist</div>
+      ${chk('Quote priced (value > £0)', q.totalExTax > 0)}
+      ${chk('Labour hours entered', q.labourHours > 0)}
+      ${chk('Drawings received', ax?.drawingsReceived ?? null)}
+      ${chk('Subcontractor prices in Simpro', ax?.subPricesIn ?? null)}
+      ${chk('Forecast probability set', q.forecastPct > 0)}
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Flags</div>
+      ${ax?.riskFlags?.map(f => `<div class="result-flag flag-risk"><span style="flex-shrink:0">▲</span>${f}</div>`).join('') || ''}
+      ${ax?.positiveFlags?.map(f => `<div class="result-flag flag-good"><span style="flex-shrink:0">●</span>${f}</div>`).join('') || ''}
+      ${!ax?.riskFlags?.length && !ax?.positiveFlags?.length ? '<div style="color:var(--text3);font-size:12px">No flags raised.</div>' : ''}
+    </div>
+  </div>`;
+
+  // Civils sanity check
+  if (d.lineItems && d.lineItems.length) {
+    html += renderSanityCheck(d.lineItems);
+  }
+
+  // Recommendation
+  if (ax?.recommendation) {
+    html += `<div class="card" style="border-left:3px solid var(--amber);border-radius:0 var(--radius) var(--radius) 0">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--amber);margin-bottom:5px">AI RECOMMENDATION</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">${ax.recommendation}</div>
+    </div>`;
+  }
+
+  // Log prompt
+  html += `<div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+    <button class="btn btn-secondary" onclick="prefillLog(${q.id},'${(q.name||'').replace(/'/g,'\\'')}',${q.totalExTax||0},${q.grossMarginPct||0},${matPct.toFixed(0)})">Log outcome for this quote</button>
+  </div>`;
+
+  document.getElementById('review-result').style.display = 'block';
+  document.getElementById('review-result').innerHTML = html;
+}
+
+function prefillLog(id, name, val, margin, matpct) {
+  document.getElementById('log-id').value     = id;
+  document.getElementById('log-name').value   = name;
+  document.getElementById('log-val').value    = val;
+  document.getElementById('log-margin').value = margin;
+  document.getElementById('log-matpct').value = matpct;
+  goto('tracker');
+  document.getElementById('log-outcome').focus();
+}
+
+// ─── Win / loss tracker ────────────────────────────────────
+function logOutcome() {
+  const id      = document.getElementById('log-id').value;
+  const name    = document.getElementById('log-name').value;
+  const val     = document.getElementById('log-val').value;
+  const margin  = document.getElementById('log-margin').value;
+  const matpct  = document.getElementById('log-matpct').value;
+  const outcome = document.getElementById('log-outcome').value;
+  const notes   = document.getElementById('log-notes').value;
+  if (!id || !outcome) return;
+  try {
+    let log = JSON.parse(localStorage.getItem('mes_log') || '[]');
+    log.unshift({ id:+id, name, val:+val, margin:+margin, matpct:+matpct, outcome, notes, date: new Date().toISOString().split('T')[0] });
+    localStorage.setItem('mes_log', JSON.stringify(log));
+    const s = document.getElementById('log-saved');
+    s.style.display = 'inline'; setTimeout(() => s.style.display = 'none', 2000);
+    ['log-id','log-name','log-val','log-margin','log-matpct','log-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('log-outcome').value = '';
+    renderLog();
+  } catch(e){}
+}
+
+function renderLog() {
+  try {
+    const log = JSON.parse(localStorage.getItem('mes_log') || '[]');
+    const empty = !log.length;
+    document.getElementById('log-empty').style.display        = empty ? '' : 'none';
+    document.getElementById('log-table-wrap').style.display   = empty ? 'none' : '';
+    document.getElementById('tracker-empty').style.display    = empty ? '' : 'none';
+    document.getElementById('tracker-stats').style.display    = empty ? 'none' : '';
+    if (empty) return;
+
+    const won  = log.filter(r => r.outcome === 'won');
+    const lost = log.filter(r => r.outcome === 'lost');
+    const decided = won.length + lost.length;
+    const winRate  = decided > 0 ? Math.round((won.length/decided)*100) + '%' : '—';
+    const avgWon   = won.length  ? (won.reduce((a,r)=>a+r.margin,0)/won.length).toFixed(1)+'%'  : '—';
+    const avgLost  = lost.length ? (lost.reduce((a,r)=>a+r.margin,0)/lost.length).toFixed(1)+'%': '—';
+    const totalWon = won.reduce((a,r)=>a+(r.val||0),0);
+
+    document.getElementById('st-wr').textContent    = winRate;
+    document.getElementById('st-wrsub').textContent = won.length + ' won of ' + decided + ' decided';
+    document.getElementById('st-wm').textContent    = avgWon;
+    document.getElementById('st-lm').textContent    = avgLost;
+    document.getElementById('st-tv').textContent    = totalWon ? '£'+Math.round(totalWon).toLocaleString('en-GB') : '—';
+
+    const oc = { won:'var(--green)', lost:'var(--red)', pending:'var(--amber)', 'no-bid':'var(--text3)' };
+    document.getElementById('log-tbody').innerHTML = log.map(r => `<tr>
+      <td>#${r.id}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name||'—'}</td>
+      <td class="mono">${r.val ? fmt(r.val) : '—'}</td>
+      <td class="mono">${r.margin ? r.margin+'%' : '—'}</td>
+      <td class="mono">${r.matpct ? r.matpct+'%' : '—'}</td>
+      <td><span class="chip" style="background:${oc[r.outcome]||'var(--text3)'}20;color:${oc[r.outcome]||'var(--text3)'};border-color:${oc[r.outcome]||'var(--text3)'}40">${r.outcome}</span></td>
+      <td>${r.date||'—'}</td>
+      <td style="color:var(--text3);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</td>
+    </tr>`).join('');
+  } catch(e){}
+}
+
+function clearLog() {
+  if (!confirm('Clear all logged outcomes? This cannot be undone.')) return;
+  localStorage.removeItem('mes_log');
+  renderLog();
+}
+
+function exportCSV() {
+  try {
+    const log = JSON.parse(localStorage.getItem('mes_log') || '[]');
+    if (!log.length) return;
+    const hdr = ['Quote #','Name','Contract Value','Gross Margin %','Materials %','Outcome','Date','Notes'];
+    const rows = log.map(r => [r.id, r.name, r.val, r.margin, r.matpct, r.outcome, r.date, r.notes].map(v => '"'+(v||'').toString().replace(/"/g,'""')+'"').join(','));
+    const csv = [hdr.join(','), ...rows].join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'mes-quote-log-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+  } catch(e){}
+}
+
+// ─── Sweet spot calculator ─────────────────────────────────
+function calcSweet() {
+  const v   = +document.getElementById('c-val').value;
+  const m   = +document.getElementById('c-mat').value;
+  const l   = +document.getElementById('c-lab').value;
+  const gm  = +document.getElementById('c-gm').value;
+  if (!v || !gm) { document.getElementById('calc-out').style.display = 'none'; return; }
+  document.getElementById('calc-out').style.display = 'block';
+
+  const matPct    = v > 0 ? (m/v)*100 : 0;
+  const grossProf = v * (gm/100);
+  const subEmbed  = m * 0.15;
+  const mesNet    = grossProf - subEmbed;
+  const mesRevDirect = v - m;
+  const mesEffMarg = mesRevDirect > 0 ? (mesNet/mesRevDirect)*100 : 0;
+
+  let tierLabel, sweetMin, sweetMax, tColor, vClass;
+  if (matPct > 60)      { tierLabel='Large ICP/Civil';         sweetMin=18; sweetMax=32; tColor='var(--red)';    }
+  else if (matPct > 25) { tierLabel='Mixed scope';             sweetMin=30; sweetMax=55; tColor='var(--amber)';  }
+  else                  { tierLabel='Labour / maintenance';    sweetMin=45; sweetMax=90; tColor='var(--green)';  }
+
+  const inZone = gm >= sweetMin && gm <= sweetMax;
+  const tooHigh = gm > sweetMax;
+  vClass = inZone ? 'verdict-in' : tooHigh ? 'verdict-high' : 'verdict-low';
+  const vColor = inZone ? 'var(--green)' : tooHigh ? 'var(--amber)' : 'var(--red)';
+  const vText  = inZone
+    ? `At ${gm.toFixed(1)}% gross margin this quote is in the competitive sweet spot for a <strong>${tierLabel}</strong> job (target ${sweetMin}–${sweetMax}%). Historical wins cluster in this range.`
+    : tooHigh
+    ? `At ${gm.toFixed(1)}% this may be above market for a <strong>${tierLabel}</strong> job (sweet spot ${sweetMin}–${sweetMax}%). You could be competitive with room to reduce if required.`
+    : `At ${gm.toFixed(1)}% this is below the ${sweetMin}% floor for a <strong>${tierLabel}</strong> job. Even at this level similar jobs have been won — but after the civils markup adjustment your real MES return may be very thin.`;
+
+  document.getElementById('calc-verdict').className = 'verdict-box ' + vClass;
+  document.getElementById('calc-verdict').innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <span class="chip" style="background:${tColor}20;color:${tColor};border-color:${tColor}40">${tierLabel.toUpperCase()}</span>
+      <span class="chip chip-blue">Materials: ${matPct.toFixed(0)}%</span>
+      <span class="chip chip-blue">Sweet spot: ${sweetMin}–${sweetMax}%</span>
+    </div>
+    <div class="verdict-title" style="color:${vColor}">${inZone?'In the sweet spot':tooHigh?'May be above market':'Below minimum target'}</div>
+    <div class="verdict-body" style="color:${inZone?'#86efac':tooHigh?'#fcd34d':'#fca5a5'}">${vText}</div>`;
+
+  document.getElementById('calc-breakdown').innerHTML = `
+    <div class="card-title">Breakdown</div>
+    ${[
+      ['Contract value',                     fmt(v),                  ''],
+      ['Materials / civils (subcontract)',    fmt(m),                  matPct.toFixed(0)+'%'],
+      ['Labour (MES direct)',                 l ? fmt(l) : '—',       labPct(l,v)],
+      ['Gross profit',                        fmt(grossProf),          ''],
+      ['Est. sub\'s embedded margin (~15%)',  '−'+fmt(subEmbed),       ''],
+      ['MES net contribution',                fmt(mesNet),             ''],
+    ].map(([lbl,val,sub]) => `
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text2)">${lbl}</span>
+        <span class="mono" style="font-weight:500">${val} <span style="color:var(--text3);font-weight:400">${sub}</span></span>
+      </div>`).join('')}
+    <div style="margin-top:8px;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--text2)">
+      MES effective margin on own work: <span class="mono" style="color:var(--text);font-weight:500">${mesEffMarg.toFixed(1)}%</span>
+    </div>`;
+
+  const steps = [-8,-4,0,4,8].map(d => {
+    const mg = gm+d, gp = v*(mg/100);
+    const inZ = mg>=sweetMin && mg<=sweetMax;
+    return `<div class="sens-row ${d===0?'current':''}">
+      <span class="mono" style="color:${d===0?'var(--text)':'var(--text3)'}">${mg.toFixed(1)}%${d===0?' ← you':''}</span>
+      <span class="mono" style="color:${d===0?'var(--text)':'var(--text2)'}">${fmt(gp)}</span>
+      <span class="chip" style="font-size:10px;background:${inZ?'var(--green-dim)':'var(--red-dim)'};color:${inZ?'var(--green)':'var(--red)'};border-color:${inZ?'var(--green-border)':'var(--red-border)'}">${inZ?'in zone':'out'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('calc-sensitivity').innerHTML = `
+    <div class="card-title">Sensitivity — gross profit by margin</div>
+    ${steps}
+    <div style="margin-top:10px;font-size:11px;color:var(--text3)">At ${sweetMin}% floor: ${fmt(v*(sweetMin/100))} &nbsp;·&nbsp; At ${sweetMax}% ceiling: ${fmt(v*(sweetMax/100))}</div>`;
+}
+
+function labPct(l, v) { return l && v > 0 ? (l/v*100).toFixed(0)+'%' : ''; }
+
+// ─── Init ──────────────────────────────────────────────────
+updateApiStatus();
+renderRecent();
+
+// Pre-fill calculator with quote 5953
+document.getElementById('c-val').value = 413714;
+document.getElementById('c-mat').value = 284439;
+document.getElementById('c-lab').value = 35545;
+document.getElementById('c-gm').value  = 22.7;
+calcSweet();
+</script>
+</body>
+</html>
+
+<!-- ═══════════════════════════════════════════════════════════
+     QUOTE 5943 COST GAP ANALYSIS — appended
+     ═══════════════════════════════════════════════════════════ -->
