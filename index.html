@@ -545,6 +545,7 @@ input[type=number].big { font-family: 'DM Mono', monospace; font-size: 20px; fon
 
 <script>
 // ─── Helpers ───────────────────────────────────────────────
+const cfg = () => ({
   workerUrl: localStorage.getItem('mes_worker') || 'https://quote-checker.mes-bot.workers.dev'
 });
 const fmt = n => n ? '£' + Math.round(n).toLocaleString('en-GB') : '£0';
@@ -647,24 +648,6 @@ async function runReview() {
     document.getElementById('review-btn').disabled = false;
     document.getElementById('review-btn').textContent = 'Analyse →';
   }
-}
-
-function buildPrompt(id, intId) {
-  return `You are a quote analyst for MES Power Engineering (electrical infrastructure, ICP/IDNO, HV cable, substation, renewables, civils). Use Tugger Simpro integration ${intId}.
-
-WIN RULE: Quote WON = SimproJobs has ConvertedFromQuoteID = ${id}. LinkedJobID on a quote = variation order, NOT a win.
-CIVILS RULE: Treat all materials as subcontracted civils. Their margin is in your cost base.
-TIERS: Small less than 50k or materials less than 25pct target 45-90pct; Medium 50k-300k target 30-55pct; Large ICP/Civil over 300k or materials over 60pct target 18-32pct.
-
-Queries:
-1. SimproQuotes where id=${id}: Name,Stage,CustomerStage,IsClosed,LinkedJobID,TotalExTax,TotalsMaterialsCostEstimate,TotalsResourcesCostLaborEstimate,TotalsGrossMarginEstimate,TotalsNettMarginEstimate,TotalsResourcesCostLaborHoursEstimate,ForecastPercent,DateIssued,DueDate,Description
-2. SimproJobs where ConvertedFromQuoteID=${id} AND Deleted=false: id,Name
-3. SimproQuoteContractorJobs where OwnerID=${id} AND Deleted=false: id,Description,Total_ExTax
-
-Return ONLY this JSON (no markdown, no fences):
-{"found":true,"quote":{"id":${id},"name":"","stage":"","isClosed":false,"isVariation":false,"totalExTax":0,"materialsCost":0,"labourCost":0,"labourHours":0,"grossMarginPct":0,"nettMarginPct":0,"forecastPct":0,"dateIssued":null,"dueDate":null,"description":"plain text strip all HTML max 350 chars"},"won":{"isWon":false,"jobId":0,"jobName":""},"subcontractors":{"totalCost":0,"count":0,"items":[{"description":"","totalCost":0}]},"assessment":{"jobTier":"Large ICP/Civil","tierMin":18,"tierMax":32,"markupRisk":false,"markupNote":"","riskFlags":[],"positiveFlags":[],"recommendation":"","costsComplete":true,"drawingsReceived":null,"subPricesIn":null}}
-
-isVariation = LinkedJobID > 0. markupRisk = subcontractors totalCost divided by totalExTax > 0.12. Explain markup risk in plain English in markupNote. List specific riskFlags and positiveFlags for this quote.`;
 }
 
 function renderResult(d, id) {
