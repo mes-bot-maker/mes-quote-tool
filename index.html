@@ -978,9 +978,17 @@ function renderResult(d, id) {
     </div>`;
   }
 
-  // Log prompt
+  // Log prompt — use data attributes to avoid quote escaping issues
   html += `<div style="margin-top:14px;display:flex;gap:8px;align-items:center">
-    <button class="btn btn-secondary" onclick="prefillLog(${q.id},'${(q.name||'').replace(/'/g,'\\'')}',${q.totalExTax||0},${q.grossMarginPct||0},${matPct.toFixed(0)})">Log outcome for this quote</button>
+    <button class="btn btn-secondary"
+      data-qid="${q.id}"
+      data-qname="${(q.name||'').replace(/"/g,'&quot;')}"
+      data-qval="${q.totalExTax||0}"
+      data-qmargin="${q.grossMarginPct||0}"
+      data-qmatpct="${matPct.toFixed(0)}"
+      onclick="prefillLog(this.dataset.qid,this.dataset.qname,this.dataset.qval,this.dataset.qmargin,this.dataset.qmatpct)">
+      Log outcome for this quote
+    </button>
   </div>`;
 
   document.getElementById('review-result').style.display = 'block';
@@ -990,8 +998,8 @@ function renderResult(d, id) {
 function prefillLog(id, name, val, margin, matpct) {
   document.getElementById('log-id').value     = id;
   document.getElementById('log-name').value   = name;
-  document.getElementById('log-val').value    = val;
-  document.getElementById('log-margin').value = margin;
+  document.getElementById('log-val').value    = +val || 0;
+  document.getElementById('log-margin').value = +margin || 0;
   document.getElementById('log-matpct').value = matpct;
   goto('tracker');
   document.getElementById('log-outcome').focus();
